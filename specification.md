@@ -21,7 +21,22 @@
 - **USER STORY 8**: 사용자는 장바구니 페이지에서 '주문하기' 버튼을 클릭할 수 있다.
 - **USER STORY 9**: 사용자가 '주문하기' 버튼을 클릭하면, "주문이 성공적으로 완료되었습니다." 라는 메시지를 확인하고 장바구니는 비워진다. (실제 결제 로직은 제외)
 
+### 라. 검색 및 필터링
+
+- **USER STORY 10**: 사용자는 헤더의 검색창에 키워드를 입력하여 상품을 검색할 수 있다.
+- **USER STORY 11**: 사용자는 상품 목록 페이지에서 가격 순, 최신 순으로 상품을 정렬할 수 있다.
+
+### 마. 사용자 리뷰
+
+- **USER STORY 12**: 사용자는 상품 상세 페이지 하단에서 다른 사람들의 리뷰(별점, 텍스트, 사진)를 볼 수 있다.
+
 ## 3. 데이터 모델 (Data Model)
+
+- **User (사용자)**
+  - `id`: 사용자 고유 ID (Long)
+  - `username`: 사용자명 (String)
+  - `password`: 비밀번호 (String)
+  - `address`: 주소 (String)
 
 - **Product (상품)**
   - `id`: 상품 고유 ID (Long)
@@ -30,6 +45,61 @@
   - `imageUrl`: 상품 이미지 경로 (String)
   - `description`: 상품 상세 설명 (String)
 
+- **Cart (장바구니)**
+  - `id`: 장바구니 고유 ID (Long)
+  - `userId`: 사용자 ID (Long)
+
 - **CartItem (장바구니 항목)**
+  - `id`: 장바구니 항목 고유 ID (Long)
+  - `cartId`: 장바구니 ID (Long)
   - `productId`: 상품 ID (Long)
   - `quantity`: 수량 (int)
+
+- **Order (주문)**
+  - `id`: 주문 고유 ID (Long)
+  - `userId`: 사용자 ID (Long)
+  - `orderDate`: 주문 날짜 (String 또는 LocalDateTime)
+  - `totalPrice`: 총 주문 금액 (int)
+  - `shippingAddress`: 배송지 (String)
+
+- **OrderItem (주문 항목)**
+  - `id`: 주문 항목 고유 ID (Long)
+  - `orderId`: 주문 ID (Long)
+  - `productId`: 상품 ID (Long)
+  - `quantity`: 수량 (int)
+  - `orderPrice`: 주문 당시 가격 (int)
+
+- **Review (리뷰)**
+  - `id`: 리뷰 고유 ID (Long)
+  - `productId`: 상품 ID (Long)
+  - `userId`: 사용자 ID (Long)
+  - `rating`: 별점 (int)
+  - `comment`: 내용 (String)
+  - `imageUrl`: 리뷰 이미지 경로 (String)
+
+## 4. UI/UX 컨셉 (신규 추가)
+
+- 비주얼 테마 및 스타일 가이드
+
+  - 색상 팔레트:
+    - 주요 색상: 쿠팡의 대표 파란색 (#3182F7)을 버튼, 링크 등 핵심 요소에 사용
+    - 보조 색상: 회색 (#888888) 계열을 텍스트, 비활성 요소에 사용
+    - 배경 색상: 흰색 (#FFFFFF) 또는 아주 연한 회색 (#F5F5F5)
+
+  - 타이포그래피:
+    - 글꼴: 본문과 제목 모두 명확한 sans-serif 계열 폰트 사용 (예: Pretendard, Noto Sans KR)
+    - 크기: 제목(h1)은 24px, 상품명은 16px, 가격은 18px (굵게)
+
+  - 레이아웃:
+    - 전체적으로 그리드 시스템을 기반으로 한 반응형 레이아웃
+    - 콘텐츠 영역의 최대 너비는 1280px로 제한
+
+- 페이지별 와이어프레임 (텍스트 기반)
+
+  - 상품 목록 페이지:
+    - 좌측 (20%): 카테고리 목록, 가격대별 필터 슬라이더
+    - 우측 (80%): 상품 카드를 4열 그리드로 표시. 각 카드는 이미지, 상품명, 가격, 별점 리뷰를 포함.
+
+  - 상품 상세 페이지:
+    - 상단: 좌측에 상품 이미지, 우측에 상품명, 가격, 수량 선택 박스, 장바구니 담기 버튼, 바로 구매 버튼 배치
+    - 하단: 상세 설명 탭, 사용자 리뷰 탭으로 구성
