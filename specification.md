@@ -77,7 +77,7 @@
   - `comment`: 내용 (String)
   - `imageUrl`: 리뷰 이미지 경로 (String)
 
-## 4. UI/UX 컨셉 (신규 추가)
+## 4. UI/UX 컨셉
 
 - 비주얼 테마 및 스타일 가이드
 
