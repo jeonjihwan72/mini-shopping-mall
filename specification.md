@@ -1,4 +1,4 @@
-# 미니 쇼핑몰 프로젝트 기능 명세서 (Specification)
+# 미니 쇼핑몰 백엔드 상세 명세서 (Specification)
 
 ## 1. 목표
 

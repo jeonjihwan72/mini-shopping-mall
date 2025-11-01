@@ -1,5 +1,9 @@
 # 미니 쇼핑몰 프로젝트 백엔드 기술 지침 (Instruction)
 
+이 문서는 쇼핑몰 프로젝트의 백엔드 API 서버 개발에 필요한 핵심 기술 스택, 아키텍처, 개발 범위, 환경 설정에 대한 지침을 제공한다.
+
+본 프로젝트는 프론트엔드 뷰(View)를 렌더링하지 않으며, 오직 Headless API (JSON 데이터만 반환) 서버로만 동작한다.
+
 ## 1. 핵심 아키텍처 (Core Architecture)
 
 - 아키텍처: 모놀리식 아키텍처 (Monolithic Architecture)
