@@ -1,105 +1,114 @@
 # 미니 쇼핑몰 백엔드 상세 명세서 (Specification)
 
-## 1. 목표
+이 문서는 instruction.md에 정의된 기술 지침을 바탕으로, '무엇을' 개발해야 하는지에 대한 상세 기능 요구사항(Requirement), 데이터 모델(Entity), API 명세(DTO)를 정의한다.
 
-사용자가 웹 브라우저를 통해 상품을 둘러보고, 장바구니에 담아 가상으로 주문하는 경험을 제공하는 최소 기능의 쇼핑몰을 구현한다.
+---
 
-## 2. 핵심 기능 목록 (User Stories)
+## 1. 프로젝트 목표 및 범위
 
-### 가. 상품 보기
-- **USER STORY 1**: 사용자는 **상품 목록 페이지**에서 판매 중인 모든 상품의 이미지, 이름, 가격을 한눈에 볼 수 있다.
-- **USER STORY 2**: 사용자는 상품 목록 페이지에서 특정 상품을 클릭하여 **상품 상세 페이지**로 이동할 수 있다.
-- **USER STORY 3**: 사용자는 상품 상세 페이지에서 상품의 더 자세한 설명과 이미지를 확인할 수 있다.
+- 목표: 1개월 내 핵심 기능(회원, 상품, 주문)을 갖춘 백엔드 API 서버 프로토타입을 완성한다.
+- 핵심 범위 (In-Scope): 회원/권한, 상품 관리, 주문 관리(재고 차감 포함)
+- 범위 외 (Out-of-Scope): 결제(PG 연동), 배송(운송장 연동), 프로모션, 고객 서비스 등은 초기 버전에서 제외하거나 최소한으로 구현한다.
 
-### 나. 장바구니 관리
-- **USER STORY 4**: 사용자는 상품 상세 페이지에서 '장바구니 담기' 버튼을 눌러 원하는 상품을 장바구니에 추가할 수 있다.
-- **USER STORY 5**: 사용자는 **장바구니 페이지**에서 현재 담아둔 모든 상품의 목록, 각 상품의 수량, 가격, 그리고 총 주문 금액을 확인할 수 있다.
-- **USER STORY 6**: 사용자는 장바구니 페이지에서 특정 상품의 수량을 변경할 수 있으며, 변경 시 총 주문 금액이 실시간으로 업데이트되어야 한다.
-- **USER STORY 7**: 사용자는 장바구니 페이지에서 특정 상품을 삭제할 수 있다.
+## 2. 핵심 데이터 모델 (Entities)
 
-### 다. 주문 처리
-- **USER STORY 8**: 사용자는 장바구니 페이지에서 '주문하기' 버튼을 클릭할 수 있다.
-- **USER STORY 9**: 사용자가 '주문하기' 버튼을 클릭하면, "주문이 성공적으로 완료되었습니다." 라는 메시지를 확인하고 장바구니는 비워진다. (실제 결제 로직은 제외)
+JPA 엔티티로 관리될 핵심 데이터 모델이다. (편의상 Lombok 어노테이션 사용)
 
-### 라. 검색 및 필터링
+#### 2.1 Member (회원)
 
-- **USER STORY 10**: 사용자는 헤더의 검색창에 키워드를 입력하여 상품을 검색할 수 있다.
-- **USER STORY 11**: 사용자는 상품 목록 페이지에서 가격 순, 최신 순으로 상품을 정렬할 수 있다.
+@Entity 
+| 필드명 | 타입 | 제약조건 | 설명 |
+|---|---|---|---|
+| id | Long | PK | 회원 고유 ID |
+| username | String | Not Null, Unique | 로그인 ID |
+| password | String | Not Null | 해싱된 비밀번호 |
+| address | String | - | 배송 주소 |
+| role | String | Not Null | 사용자 권한(ROLE_USER, ROLE_ADMIN)|
 
-### 마. 사용자 리뷰
+#### 2.2 Product (상품)
 
-- **USER STORY 12**: 사용자는 상품 상세 페이지 하단에서 다른 사람들의 리뷰(별점, 텍스트, 사진)를 볼 수 있다.
+@Entity
+| 필드명 | 타입 | 제약조건 | 설명 |
+|---|---|---|---|
+| id | Long | PK | 상품 고유 ID |
+| name | String | Not Null | 상품명 |
+| price | Int | Not Null | 상품 가격 |
+| stock | Int | Not Null | 재고 수량 |
+| description | String | - | 상품 설명 |
 
-## 3. 데이터 모델 (Data Model)
+#### 2.3 Order (주문)
 
-- **User (사용자)**
-  - `id`: 사용자 고유 ID (Long)
-  - `username`: 사용자명 (String)
-  - `password`: 비밀번호 (String)
-  - `address`: 주소 (String)
+@Entity
+| 필드명 | 타입 | 제약조건 | 설명 |
+|---|---|---|---|
+| id | Long | PK | 주문 상품 고유 ID |
+| member | Member | ManyToOne | 주문한 회원 |
+| orderItems | List<OrderItem> | OneToMany | 주문 상품 목록 |
+| totalPrice | Int | Not Null | 총 주문 금액 |
+| status | String | Not Null | 주문 상태 (ORDERED, CANCELED) |
 
-- **Product (상품)**
-  - `id`: 상품 고유 ID (Long)
-  - `name`: 상품명 (String)
-  - `price`: 가격 (int)
-  - `imageUrl`: 상품 이미지 경로 (String)
-  - `description`: 상품 상세 설명 (String)
+#### 2.4 OrderItem (주문 상품)
 
-- **Cart (장바구니)**
-  - `id`: 장바구니 고유 ID (Long)
-  - `userId`: 사용자 ID (Long)
+@Entity
+| 필드명 | 타입 | 제약조건 | 설명 |
+|---|---|---|---|
+| id | Long | PK | 주문 상품 고유 ID |
+| order | Order | ManyToOne | 연결된 주문 |
+| product | Product | ManyToOne | 주문된 상품 |
+| count | Int | Not Null | 주문 수량 |
 
-- **CartItem (장바구니 항목)**
-  - `id`: 장바구니 항목 고유 ID (Long)
-  - `cartId`: 장바구니 ID (Long)
-  - `productId`: 상품 ID (Long)
-  - `quantity`: 수량 (int)
+## 3. 기능 요구사항 명세 (Functional Requirements)
 
-- **Order (주문)**
-  - `id`: 주문 고유 ID (Long)
-  - `userId`: 사용자 ID (Long)
-  - `orderDate`: 주문 날짜 (String 또는 LocalDateTime)
-  - `totalPrice`: 총 주문 금액 (int)
-  - `shippingAddress`: 배송지 (String)
+다음 `FR-XXX` ID로 명명된 요구사항을 모두 만족하는 Controller, Service, Repository 코드를 생성해야 한다.
 
-- **OrderItem (주문 항목)**
-  - `id`: 주문 항목 고유 ID (Long)
-  - `orderId`: 주문 ID (Long)
-  - `productId`: 상품 ID (Long)
-  - `quantity`: 수량 (int)
-  - `orderPrice`: 주문 당시 가격 (int)
+#### 3.1 회원/권한 (FR-MEMBER)
 
-- **Review (리뷰)**
-  - `id`: 리뷰 고유 ID (Long)
-  - `productId`: 상품 ID (Long)
-  - `userId`: 사용자 ID (Long)
-  - `rating`: 별점 (int)
-  - `comment`: 내용 (String)
-  - `imageUrl`: 리뷰 이미지 경로 (String)
+| ID | 명칭 | 중요도 | 상세 설명 |
+|---|---|---|---|
+| FR-M-001 | 회원 가입 | 상 | username, password, address를 입력받아 회원을 생성한다. (API: POST /api/members/join) |
+| FR-M-001-1 | ID 고유성 | 상 | username 중복 시 409 Conflict 에러를 반환한다. |
+| FR-M-001-2 | 비밀번호 암호화 | 상 | password는 Bcrypt로 해싱하여 DB에 저장한다. (spring-boot-starter-security의 PasswordEncoder 사용) |
+| FR-M-001-3 | 기본 권한 | 상 | 회원가입 시, 기본 권하능로 ROLE_USER를 부여한다. |
+| FR-M-002 | 로그인(인증) | 상 | username, password로 로그인을 요청한다. (API: POST /api/members/login) |
+| FR-M-002-1 | 인증 성공 | 상 | 인증 성공 시, JWT 토큰을 발급하여 반환한다. (또는 세션 ID) |
+| FR-M-002-2 | 인증 실패 | 상 | 자격 증명 실패 시 401 Unauthorized 에러를 반환한다. |
+| FR-M-003 | 권한 관리(인가) | 상 | Spring Security를 사용하여 API 접근 권한을 제어한다. |
+| FR-M-003-1 | 관리자 API | 상 | /api/admin/** 패턴의 API는 ROLE_ADMIN 권한만 호출할 수 있다. |
+| FR-M-003-2 | 사용자 API | 상 | /api/orders/** 패턴의 API는 ROLE_USER 권한(로그인)이 필요하다. |
+| FR-M-003-3 | 공개 API | 상 | GET /api/products/**, POST /api/members/join, POST /api/members/login 은 누구나 접근 가능하다.|
 
-## 4. UI/UX 컨셉
+#### 3.2 상품 (FR-PRODUCT)
 
-- 비주얼 테마 및 스타일 가이드
+| ID | 명칭 | 중요도 | 상세 설명 |
+|---|---|---|---|
+| FR-P-001 | (관리자) 상품 등록 | 상 | 관리자(ROLE_ADMIN)가 name, price, stock, description을 입력받아 Product를 생성한다. (API: POST /api/admin/products) |
+| FR-P-002 | 상품 목록 조회 | 상 | 모든 사용자가 상품 목록(간략 정보)을 조회할 수 있다. (API: GET /api/products) |
+| FR-P-003 | 상품 상세 조회 | 상 | 모든 사용자가 productId로 상품 상세 정보를 조회할 수 있다. (API: GET /api/products/{productId}) |
+| FR-P-003-1 | 조회 실패 | 중 | productId가 존재하지 않을 경우 404 Not Found 에러를 반환한다. |
 
-  - 색상 팔레트:
-    - 주요 색상: 쿠팡의 대표 파란색 (#3182F7)을 버튼, 링크 등 핵심 요소에 사용
-    - 보조 색상: 회색 (#888888) 계열을 텍스트, 비활성 요소에 사용
-    - 배경 색상: 흰색 (#FFFFFF) 또는 아주 연한 회색 (#F5F5F5)
+#### 3.3 주문 (FR-ORDER)
 
-  - 타이포그래피:
-    - 글꼴: 본문과 제목 모두 명확한 sans-serif 계열 폰트 사용 (예: Pretendard, Noto Sans KR)
-    - 크기: 제목(h1)은 24px, 상품명은 16px, 가격은 18px (굵게)
+| ID | 명칭 | 중요도 | 상세 설명 |
+|---|---|---|---|
+| FR-O-001 | 주문 생성 | 최상 | 로그인한 사용자(ROLE_USER)가 List<{productId, count}> 형식의 DTO로 주문을 요청한다. (API: POST /api/orders) |
+| FR-O-002 | 단일 트랜잭션 | 최상 | (중요)FR-O-003부터 FR-O-006까지의 모든 과정은 단일 트랜잭션(@Transactional) 내에서 처리되어야 한다. |
+| FR-O-003 | 재고 확인 | 최상 | 주문 요청된 모든 productId의 stock이 요청된 count보다 크거나 같은지 확인한다. |
+| FR-O-003-1 | 재고 부족 예외 | 최상 | stock이 count보다 적은 상품이 하나라도 있으면, 트랜잭션 전체를 롤백하고 400 Bad Request (또는 409 Conflict) 에러를 반환한다. |
+| FR-O-004 | 재고 차감(동시성) | 최상 | (중요) 재고 확인 및 차감 시, Pessimistic Lock(비관적 락)을 사용하여 Product 엔티티를 조회 및 수정한다.(JPA LockModeType.PESSIMISTIC_WRITE 사용) |
+| FR-O-005 | 주문 총액 계산 | 상 | `totalPrice = (상품1 가격 * 수량1) + (상품2 가격 * 수량2) ...` 공식을 사용해 총액을 계산한다. |
+| FR-O-006 | 주문/주문항목 저장 | 상 | Order를 생성(상태 ORDERED)하고, 요청된 items를 OrderItem으로 변환하여 Order와 연관시켜 모두 저장한다. |
+| FR-O-007 | 주문 조회 | 중 | 로그인한 사용자가 자신의 주문 내역을 조회할 수 있다. (API: GET /api/orders) |
+| FR-O-007-1 | 주문 상세 조회 | 중 | orderId로 특정 주문의 상세 내역(주문 상품 포함)을 조회할 수 있다. (API: GET /api/orders/{orderId}) |
+| FR-O-007-2 | 조회 권한 | 중 | 사용자는 자신의 주문만 조회할 수 있어야 한다.(관리자는 모든 주문 조회 가능) |
 
-  - 레이아웃:
-    - 전체적으로 그리드 시스템을 기반으로 한 반응형 레이아웃
-    - 콘텐츠 영역의 최대 너비는 1280px로 제한
+## 4. 공통 에러 응답 형식
 
-- 페이지별 와이어프레임 (텍스트 기반)
-
-  - 상품 목록 페이지:
-    - 좌측 (20%): 카테고리 목록, 가격대별 필터 슬라이더
-    - 우측 (80%): 상품 카드를 4열 그리드로 표시. 각 카드는 이미지, 상품명, 가격, 별점 리뷰를 포함.
-
-  - 상품 상세 페이지:
-    - 상단: 좌측에 상품 이미지, 우측에 상품명, 가격, 수량 선택 박스, 장바구니 담기 버튼, 바로 구매 버튼 배치
-    - 하단: 상세 설명 탭, 사용자 리뷰 탭으로 구성
+API 실패 시, @RestControllerAdvice를 사용하여 공통된 JSON 형식으로 응답을 통일한다.
+```JSON
+{
+  "timestamp": "2025-11-01T21:30:00.000+09:00",
+  "status": 404,
+  "error": "Not Found",
+  "message": "해당 상품을 찾을 수 없습니다. (ID: 999)"
+}
+```
