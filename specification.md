@@ -14,6 +14,16 @@
 
 ## 2. 핵심 데이터 모델 (Entities)
 
+모든 엔티티는 아래의 `BaseEntity`를 상속하여 생성/수정 시간을 자동으로 기록한다.
+
+#### BaseEntity (공통)
+| 필드명 | 타입 | 제약조건 | 설명 |
+|---|---|---|---|
+| createdDate | LocalDateTime | Not Null, Updatable=false | 생성 일시 (자동 생성) |
+| modifiedDate | LocalDateTime | Not Null | 수정 일시 (자동 생성) |
+
+---
+
 JPA 엔티티로 관리될 핵심 데이터 모델이다. (편의상 Lombok 어노테이션 사용)
 
 #### 2.1 Member (회원)
@@ -25,7 +35,7 @@ JPA 엔티티로 관리될 핵심 데이터 모델이다. (편의상 Lombok 어�
 | username | String | Not Null, Unique | 로그인 ID |
 | password | String | Not Null | 해싱된 비밀번호 |
 | address | String | - | 배송 주소 |
-| role | String | Not Null | 사용자 권한(ROLE_USER, ROLE_ADMIN)|
+| role | Role | Not Null, EnumType.STRING | 사용자 권한(USER, ADMIN)|
 
 #### 2.2 Product (상품)
 
@@ -43,20 +53,20 @@ JPA 엔티티로 관리될 핵심 데이터 모델이다. (편의상 Lombok 어�
 @Entity
 | 필드명 | 타입 | 제약조건 | 설명 |
 |---|---|---|---|
-| id | Long | PK | 주문 상품 고유 ID |
-| member | Member | ManyToOne | 주문한 회원 |
-| orderItems | List<OrderItem> | OneToMany | 주문 상품 목록 |
+| id | Long | PK | 주문 고유 ID |
+| member | Member | ManyToOne(fetch = FetchType.LAZY), JoinColumn(name = "member_id") | 주문한 회원 |
+| orderItems | List<OrderItem> | OneToMany(mappedBy = "order", cascade = CascadeType.ALL) | 주문 상품 목록 |
 | totalPrice | Int | Not Null | 총 주문 금액 |
-| status | String | Not Null | 주문 상태 (ORDERED, CANCELED) |
+| status | OrderStatus | Not Null, EnumType.STRING | 주문 상태 (ORDERED, CANCELED) |
 
 #### 2.4 OrderItem (주문 상품)
 
 @Entity
 | 필드명 | 타입 | 제약조건 | 설명 |
 |---|---|---|---|
-| id | Long | PK | 주문 상품 고유 ID |
-| order | Order | ManyToOne | 연결된 주문 |
-| product | Product | ManyToOne | 주문된 상품 |
+| id | Long | PK | 주문 항목 고유 ID |
+| order | Order | ManyToOne(fetch = FetchType.LAZY), JoinColumn(name = "order_id") | 연결된 주문 |
+| product | Product | ManyToOne(fetch = FetchType.LAZY), JoinColumn(name = "product_id") | 주문된 상품 |
 | orderPrice | Int | Not Null | 주문 시점의 상품 가격 (스냅샷) |
 | count | Int | Not Null | 주문 수량 |
 
@@ -174,9 +184,9 @@ API 계층(Controller)에서 요청(Request)을 수신하고 응답(Response)을
     |---|---|---|
     | id | Long | 주문 고유 ID |
     | memberUsername | String | 주문한 회원 ID |
-    | orderItems | List<OrderitemResponse> | 주문 상품 상세 목록 |
+    | orderItems | List<OrderItemResponse> | 주문 상품 상세 목록 |
     | totalPrice | Int | 총 주문 금액 |
-    | status | String | 주문 상태 (ORDERED, CANCELED) |
+    | status | String | 주문 상태 (Enum 값을 String으로 변환) |
 
   - OrderResponse에 포함되는 내부 DTO
   - DTO 클래스: OrderItemResponse
@@ -196,11 +206,18 @@ API 계층(Controller)에서 요청(Request)을 수신하고 응답(Response)을
   |---|---|---|
   | id | Long | 주문 고유 ID |
   | totalPrice | Int | 총 주문 금액 |
-  | status | String | 주문 상태 (ORDERED, CANCELED) |
-  | orderDate | LocalDateTime | 주문 일시 (엔티티에 createdDate 필드 추가 필요) |
+  | status | String | 주문 상태 (Enum 값을 String으로 변환) |
+  | orderDate | LocalDateTime | 주문 일시 (BaseEntity의 createdDate 필드 사용) |
 
 - 참고:
-  - OrderSimpleResponse에 주문 일시(orderDate)를 포함하는 것이 일반적이다. 이를 위해 Order 엔티티에 @CreateDate를 이용한 createDate 필드 추가해야 한다. 만약 엔티티 수정이 불가능하다면 이 필드를 제외한다.
+  - 모든 엔티티는 공통 `BaseEntity`를 상속받아 `createdDate`와 `modifiedDate`를 자동으로 관리한다.
+
+---
+
+## 2-1. Enum 정의
+
+- `Role`: `USER`, `ADMIN` (Spring Security와 연동을 위해 코드 레벨에서 `ROLE_` 접두사 처리)
+- `OrderStatus`: `ORDERED`, `CANCELED`
 
 ---
 
@@ -215,7 +232,7 @@ API 계층(Controller)에서 요청(Request)을 수신하고 응답(Response)을
 | FR-M-001 | 회원 가입 | 상 | username, password, address를 입력받아 회원을 생성한다. (API: POST /api/members/join) |
 | FR-M-001-1 | ID 고유성 | 상 | username 중복 시 409 Conflict 에러를 반환한다. |
 | FR-M-001-2 | 비밀번호 암호화 | 상 | password는 Bcrypt로 해싱하여 DB에 저장한다. (spring-boot-starter-security의 PasswordEncoder 사용) |
-| FR-M-001-3 | 기본 권한 | 상 | 회원가입 시, 기본 권하능로 ROLE_USER를 부여한다. |
+| FR-M-001-3 | 기본 권한 | 상 | 회원가입 시, 기본 권한으로 `Role.USER`를 부여한다. |
 | FR-M-002 | 로그인(인증) | 상 | username, password로 로그인을 요청한다. (API: POST /api/members/login) |
 | FR-M-002-1 | 인증 성공 | 상 | 인증 성공 시, JWT 토큰을 발급하여 반환한다. |
 | FR-M-002-2 | 인증 실패 | 상 | 자격 증명 실패 시 401 Unauthorized 에러를 반환한다. |
@@ -232,7 +249,7 @@ API 계층(Controller)에서 요청(Request)을 수신하고 응답(Response)을
 | ID | 명칭 | 중요도 | 상세 설명 |
 |---|---|---|---|
 | FR-P-001 | (관리자) 상품 등록 | 상 | 관리자(ROLE_ADMIN)가 name, price, stock, description을 입력받아 Product를 생성한다. (API: POST /api/admin/products) |
-| FR-P-002 | 상품 목록 조회 | 상 | 모든 사용자가 상품 목록(간략 정보)을 조회할 수 있다. (API: GET /api/products) <br> - Query Parameter: page (페이지 번호, 0-indexed, 기본값 0), size (페이지 크기, 기본값 20) |
+| FR-P-002 | 상품 목록 조회 | 상 | 모든 사용자가 상품 목록(간략 정보)을 조회할 수 있다. (API: GET /api/products) <br> - Query Parameter: page (페이지 번호, 0-indexed, 기본값 0), size (페이지 크기, 기본값 20) <br> - 정렬: 최신 등록순 (ID 내림차순) |
 | FR-P-003 | 상품 상세 조회 | 상 | 모든 사용자가 productId로 상품 상세 정보를 조회할 수 있다. (API: GET /api/products/{productId}) |
 | FR-P-003-1 | 조회 실패 | 중 | productId가 존재하지 않을 경우 404 Not Found 에러를 반환한다. |
 | FR-P-004 | (관리자) 상품 수정 | 상 | 관리자(ROLE_ADMIN)가 productId로 상품을 찾아 name, price, stock, description을 수정한다. (API: PATCH /api/admin/products/{productId}) |
@@ -250,14 +267,14 @@ API 계층(Controller)에서 요청(Request)을 수신하고 응답(Response)을
 | FR-O-003-1 | 재고 부족 예외 | 최상 | stock이 count보다 적은 상품이 하나라도 있으면, 트랜잭션 전체를 롤백하고 409 Conflict 에러를 반환한다. |
 | FR-O-004 | 재고 차감(동시성) | 최상 | (중요) 재고 확인 및 차감 시, Pessimistic Lock(비관적 락)을 사용하여 Product 엔티티를 조회 및 수정한다.(JPA LockModeType.PESSIMISTIC_WRITE 사용) |
 | FR-O-005 | 주문 총액 계산 | 상 | `totalPrice = (상품1 가격 * 수량1) + (상품2 가격 * 수량2) ...` 공식을 사용해 총액을 계산한다. |
-| FR-O-006 | 주문/주문항목 저장 | 상 | Order를 생성(상태 ORDERED)한다. 요청된 items를 OrderItem으로 변환 시, 현재 Product의 price를 OrderItem의 orderPrice로 복사(스냅샷)하여 Order와 연관시켜 모두 저장한다. |
-| FR-O-007 | 주문 조회 | 중 | 로그인한 사용자가 자신의 주문 내역을 조회할 수 있다. (API: GET /api/orders) <br> - Query Parameter: page (페이지 번호, 0-indexed, 기본값 0), size (페이지 크기, 기본값 20) |
+| FR-O-006 | 주문/주문항목 저장 | 상 | Order를 생성(상태 `OrderStatus.ORDERED`)한다. 요청된 items를 OrderItem으로 변환 시, 현재 Product의 price를 OrderItem의 orderPrice로 복사(스냅샷)하여 Order와 연관시켜 모두 저장한다. |
+| FR-O-007 | 주문 조회 | 중 | 로그인한 사용자가 자신의 주문 내역을 조회할 수 있다. (API: GET /api/orders) <br> - Query Parameter: page (페이지 번호, 0-indexed, 기본값 0), size (페이지 크기, 기본값 20) <br> - 정렬: 최신 주문순 (ID 내림차순) |
 | FR-O-007-1 | 주문 상세 조회 | 중 | orderId로 특정 주문의 상세 내역(주문 상품 포함)을 조회할 수 있다. (API: GET /api/orders/{orderId}) |
 | FR-O-007-2 | 조회 권한 | 중 | 사용자는 자신의 주문만 조회할 수 있어야 한다.(관리자는 모든 주문 조회 가능) |
-| FR-O-008 | (관리자) 주문 취소 | 상 | 관리자(ROLE_ADMIN)가 orderId로 주문을 찾아 상태를 CANCELED로 변경한다. (API: PATCH /api/admin/orders/{orderId}/status) |
+| FR-O-008 | (관리자) 주문 취소 | 상 | 관리자(ROLE_ADMIN)가 orderId로 주문을 찾아 상태를 `OrderStatus.CANCELED`로 변경한다. (API: PATCH /api/admin/orders/{orderId}/status) |
 | FR-O-008-1 | 재고 복구 (트랜잭션) | 최상 | (중요) 주문 취소 시, 해당 주문에 포함된 OrderItem 목록을 기반으로 Product의 stock을 다시 증가(복구)시킨다. 이 과정은 단일 트랜잭션(@Transactional)으로 처리되어야 한다. |
 | FR-O-008-2 | 재고 복구 (동시성) | 최상 | 재고 복구 시, FR-O-004의 재고 차감과 동일하게 Pessimistic Lock(비관적 락)을 사용하여, Product 엔티티의 재고를 수정한다. |
-| FR-O-008-3 | 주문 상태 확인 | 중 | 이미 CANCELED 상태인 주문을 다시 취소하려 하거나 ORDERED 상태가 아닌 주문을 취소하려 할 경우, 409 Conflict 에러를 반환한다. |
+| FR-O-008-3 | 주문 상태 확인 | 중 | 주문을 취소하려 할 때, 주문의 상태가 `OrderStatus.ORDERED`가 아니면 409 Conflict 에러를 반환한다. |
 
 ---
 
