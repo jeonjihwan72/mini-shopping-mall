@@ -72,6 +72,9 @@ JPA 엔티티로 관리될 핵심 데이터 모델이다. (편의상 Lombok 어�
 | FR-M-002 | 로그인(인증) | 상 | username, password로 로그인을 요청한다. (API: POST /api/members/login) |
 | FR-M-002-1 | 인증 성공 | 상 | 인증 성공 시, JWT 토큰을 발급하여 반환한다. |
 | FR-M-002-2 | 인증 실패 | 상 | 자격 증명 실패 시 401 Unauthorized 에러를 반환한다. |
+| FR-M-002-3 | JWT Secret Key 관리 | 상 | JWT 서명에 사용할 Secret Key는 코드에 하드코딩하지 않고 `.properties`파일에서 관리한다. (예: jwt.secret: "...") |
+| FR-M-002-4 | JWT 만료 시간 | 상 | 토큰 만료 시간(Expiration)은 24시간으로 설정한다. |
+| FR-M-002-5 | JWT Payload | 상 | 토큰의 Payload(Claims)에는 사용자를 식별할 수 있는 username과 권한을 식별할 수 있는 role 정보를 반드시 포함한다. |
 | FR-M-003 | 권한 관리(인가) | 상 | Spring Security를 사용하여 API 접근 권한을 제어한다. |
 | FR-M-003-1 | 관리자 API | 상 | /api/admin/** 패턴의 API는 ROLE_ADMIN 권한만 호출할 수 있다. |
 | FR-M-003-2 | 사용자 API | 상 | /api/orders/** 패턴의 API는 ROLE_USER 권한(로그인)이 필요하다. |
@@ -82,7 +85,7 @@ JPA 엔티티로 관리될 핵심 데이터 모델이다. (편의상 Lombok 어�
 | ID | 명칭 | 중요도 | 상세 설명 |
 |---|---|---|---|
 | FR-P-001 | (관리자) 상품 등록 | 상 | 관리자(ROLE_ADMIN)가 name, price, stock, description을 입력받아 Product를 생성한다. (API: POST /api/admin/products) |
-| FR-P-002 | 상품 목록 조회 | 상 | 모든 사용자가 상품 목록(간략 정보)을 조회할 수 있다. (API: GET /api/products) |
+| FR-P-002 | 상품 목록 조회 | 상 | 모든 사용자가 상품 목록(간략 정보)을 조회할 수 있다. (API: GET /api/products) <br> - Query Parameter: page (페이지 번호, 0-indexed, 기본값 0), size (페이지 크기, 기본값 20) |
 | FR-P-003 | 상품 상세 조회 | 상 | 모든 사용자가 productId로 상품 상세 정보를 조회할 수 있다. (API: GET /api/products/{productId}) |
 | FR-P-003-1 | 조회 실패 | 중 | productId가 존재하지 않을 경우 404 Not Found 에러를 반환한다. |
 | FR-P-004 | (관리자) 상품 수정 | 상 | 관리자(ROLE_ADMIN)가 productId로 상품을 찾아 name, price, stock, description을 수정한다. (API: PATCH /api/admin/products/{productId}) |
@@ -101,7 +104,7 @@ JPA 엔티티로 관리될 핵심 데이터 모델이다. (편의상 Lombok 어�
 | FR-O-004 | 재고 차감(동시성) | 최상 | (중요) 재고 확인 및 차감 시, Pessimistic Lock(비관적 락)을 사용하여 Product 엔티티를 조회 및 수정한다.(JPA LockModeType.PESSIMISTIC_WRITE 사용) |
 | FR-O-005 | 주문 총액 계산 | 상 | `totalPrice = (상품1 가격 * 수량1) + (상품2 가격 * 수량2) ...` 공식을 사용해 총액을 계산한다. |
 | FR-O-006 | 주문/주문항목 저장 | 상 | Order를 생성(상태 ORDERED)하고, 요청된 items를 OrderItem으로 변환하여 Order와 연관시켜 모두 저장한다. |
-| FR-O-007 | 주문 조회 | 중 | 로그인한 사용자가 자신의 주문 내역을 조회할 수 있다. (API: GET /api/orders) |
+| FR-O-007 | 주문 조회 | 중 | 로그인한 사용자가 자신의 주문 내역을 조회할 수 있다. (API: GET /api/orders) <br> - Query Parameter: page (페이지 번호, 0-indexed, 기본값 0), size (페이지 크기, 기본값 20) |
 | FR-O-007-1 | 주문 상세 조회 | 중 | orderId로 특정 주문의 상세 내역(주문 상품 포함)을 조회할 수 있다. (API: GET /api/orders/{orderId}) |
 | FR-O-007-2 | 조회 권한 | 중 | 사용자는 자신의 주문만 조회할 수 있어야 한다.(관리자는 모든 주문 조회 가능) |
 | FR-O-008 | (관리자) 주문 취소 | 상 | 관리자(ROLE_ADMIN)가 orderId로 주문을 찾아 상태를 CANCELED로 변경한다. (API: PATCH /api/admin/orders/{orderId}/status) |
