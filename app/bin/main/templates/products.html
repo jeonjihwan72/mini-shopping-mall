@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Products</title>
+</head>
+<body>
+    <h1>Products</h1>
+    <button onclick="window.location.href='/orders'">View Cart</button>
+    <div id="product-list"></div>
+
+    <hr>
+
+    <h2>Create Product (Admin)</h2>
+    <form id="create-product-form">
+        <div>
+            <label for="name">Name</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+        <div>
+            <label for="price">Price</label>
+            <input type="number" id="price" name="price" required>
+        </div>
+        <div>
+            <label for="stock">Stock</label>
+            <input type="number" id="stock" name="stock" required>
+        </div>
+        <div>
+            <label for="description">Description</label>
+            <textarea id="description" name="description"></textarea>
+        </div>
+        <button type="submit">Create</button>
+    </form>
+
+    <script>
+        function decodeJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function isAdmin() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                return false;
+            }
+            const decodedToken = decodeJwt(token);
+            return decodedToken && decodedToken.auth && decodedToken.auth.includes('ROLE_ADMIN');
+        }
+
+        async function fetchProducts() {
+            const response = await fetch('/api/products');
+            const data = await response.json();
+            const productList = document.getElementById('product-list');
+            productList.innerHTML = '';
+            data.content.forEach(product => {
+                const productDiv = document.createElement('div');
+                productDiv.innerHTML = `
+                    <h3>${product.name}</h3>
+                    <p>Price: ${product.price}</p>
+                    <button onclick="viewProduct(${product.id})">View</button>
+                    <button onclick="addToCart(${product.id})">Add to Cart</button>
+                `;
+                productList.appendChild(productDiv);
+            });
+        }
+
+        function viewProduct(id) {
+            window.location.href = `/product?id=${id}`;
+        }
+
+        function addToCart(id) {
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            const existingProduct = cart.find(item => item.productId === id);
+            if (existingProduct) {
+                existingProduct.count++;
+            } else {
+                cart.push({ productId: id, count: 1 });
+            }
+            localStorage.setItem('cart', JSON.stringify(cart));
+            alert('Product added to cart!');
+        }
+
+        document.getElementById('create-product-form').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            if (!isAdmin()) {
+                alert('관리자만 상품을 등록할 수 있습니다.');
+                return;
+            }
+
+            const name = document.getElementById('create-product-form').querySelector('#name').value;
+            const price = document.getElementById('create-product-form').querySelector('#price').value;
+            const stock = document.getElementById('create-product-form').querySelector('#stock').value;
+            const description = document.getElementById('create-product-form').querySelector('#description').value;
+            const token = localStorage.getItem('token');
+
+            const response = await fetch('/api/admin/products', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ name, price, stock, description })
+            });
+
+            if (response.ok) {
+                alert('Product created successfully!');
+                fetchProducts();
+            } else {
+                const error = await response.json();
+                alert('Product creation failed: ' + error.message);
+            }
+        });
+
+        fetchProducts();
+    </script>
+</body>
+</html>

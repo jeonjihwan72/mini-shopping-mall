@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Orders</title>
+</head>
+<body>
+    <h1>My Cart</h1>
+    <button onclick="window.location.href='/products'">Go to Products</button>
+    <div id="cart-items"></div>
+    <button id="create-order-btn">Create Order</button>
+
+    <hr>
+
+    <h1>My Orders</h1>
+    <div id="order-list"></div>
+
+    <script>
+        const token = localStorage.getItem('token');
+
+        function displayCart() {
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            const cartItemsDiv = document.getElementById('cart-items');
+            cartItemsDiv.innerHTML = '';
+
+            cart.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.innerHTML = `<p>Product ID: ${item.productId}, Quantity: ${item.count}</p>`;
+                cartItemsDiv.appendChild(itemDiv);
+            });
+        }
+
+        async function fetchOrders() {
+            const response = await fetch('/api/orders', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const data = await response.json();
+            const orderList = document.getElementById('order-list');
+            orderList.innerHTML = '';
+            data.content.forEach(order => {
+                const orderDiv = document.createElement('div');
+                orderDiv.innerHTML = `
+                    <h3>Order ID: ${order.id}</h3>
+                    <p>Total Price: ${order.totalPrice}</p>
+                    <p>Status: ${order.status}</p>
+                    <p>Date: ${order.orderDate}</p>
+                `;
+                orderList.appendChild(orderDiv);
+            });
+        }
+
+        document.getElementById('create-order-btn').addEventListener('click', async function () {
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            if (cart.length === 0) {
+                alert('Your cart is empty.');
+                return;
+            }
+
+            const response = await fetch('/api/orders', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ items: cart })
+            });
+
+            if (response.ok) {
+                alert('Order created successfully!');
+                localStorage.removeItem('cart');
+                displayCart();
+                fetchOrders();
+            } else {
+                const error = await response.json();
+                alert('Order creation failed: ' + error.message);
+            }
+        });
+
+        if (token) {
+            displayCart();
+            fetchOrders();
+        } else {
+            alert('Please login to view your orders.');
+            window.location.href = '/login';
+        }
+    </script>
+</body>
+</html>

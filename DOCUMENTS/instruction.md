@@ -28,7 +28,7 @@
 
 ## 3. 개발 언어 및 프레임워크 (Language & Framework)
 
-- 프로그래밍 언어: Java (Version 17 LTS 이상 권장)
+- 프로그래밍 언어: Java (Version 21 LTS 이상 권장)
 - 백엔드 코어 프레임워크: Spring Boot
     - 사유: 내장 웹 서버(Tomcat)를 포함하며, RESTful API 서버를 빠르고 안정적으로 구축하는 데 최적이다.
 
