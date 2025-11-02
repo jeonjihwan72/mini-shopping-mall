@@ -85,6 +85,10 @@ JPA 엔티티로 관리될 핵심 데이터 모델이다. (편의상 Lombok 어�
 | FR-P-002 | 상품 목록 조회 | 상 | 모든 사용자가 상품 목록(간략 정보)을 조회할 수 있다. (API: GET /api/products) |
 | FR-P-003 | 상품 상세 조회 | 상 | 모든 사용자가 productId로 상품 상세 정보를 조회할 수 있다. (API: GET /api/products/{productId}) |
 | FR-P-003-1 | 조회 실패 | 중 | productId가 존재하지 않을 경우 404 Not Found 에러를 반환한다. |
+| FR-P-004 | (관리자) 상품 수정 | 상 | 관리자(ROLE_ADMIN)가 productId로 상품을 찾아 name, price, stock, description을 수정한다. (API: PATCH /api/admin/products/{productId}) |
+| FR-P-004-1 | 수정 실패 | 중 | 수정하려는 productId가 존재하지 않을 경우 404 Not Found 에러를 반환한다. |
+| FR-P-005 | (관리자) 상품 삭제 | 상 | 관리자(ROLE_ADMIN)가 productId로 상품을 삭제한다. (API: DELETE /api/admin/products/{productId}) |
+| FR-P-005-1 | 삭제 제약 | 상 | 만약 해당 상품이 1개 이상의 OrderItem에서 참조되고 있을 경우(주문된 이력이 있음), 상품을 삭제할 수 없으며 409 Conflict 에러를 반환한다. |
 
 #### 3.3 주문 (FR-ORDER)
 
@@ -100,6 +104,10 @@ JPA 엔티티로 관리될 핵심 데이터 모델이다. (편의상 Lombok 어�
 | FR-O-007 | 주문 조회 | 중 | 로그인한 사용자가 자신의 주문 내역을 조회할 수 있다. (API: GET /api/orders) |
 | FR-O-007-1 | 주문 상세 조회 | 중 | orderId로 특정 주문의 상세 내역(주문 상품 포함)을 조회할 수 있다. (API: GET /api/orders/{orderId}) |
 | FR-O-007-2 | 조회 권한 | 중 | 사용자는 자신의 주문만 조회할 수 있어야 한다.(관리자는 모든 주문 조회 가능) |
+| FR-O-008 | (관리자) 주문 취소 | 상 | 관리자(ROLE_ADMIN)가 orderId로 주문을 찾아 상태를 CANCELED로 변경한다. (API: PATCH /api/admin/orders/{orderId}/status) |
+| FR-O-008-1 | 재고 복구 (트랜잭션) | 최상 | (중요) 주문 취소 시, 해당 주문에 포함된 OrderItem 목록을 기반으로 Product의 stock을 다시 증가(복구)시킨다. 이 과정은 단일 트랜잭션(@Transactional)으로 처리되어야 한다. |
+| FR-O-008-2 | 재고 복구 (동시성) | 최상 | 재고 복구 시, FR-O-004의 재고 차감과 동일하게 Pessimistic Lock(비관적 락)을 사용하여, Product 엔티티의 재고를 수정한다. |
+| FR-O-008-3 | 주문 상태 확인 | 중 | 이미 CANCELED 상태인 주문을 다시 취소하려 하거나 ORDERED 상태가 아닌 주문을 취소하려 할 경우, 409 Conflict 에러를 반환한다. |
 
 ## 4. 공통 에러 응답 형식
 
