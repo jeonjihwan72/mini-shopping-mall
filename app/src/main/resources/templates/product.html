@@ -33,6 +33,8 @@
         <button type="submit">Update</button>
     </form>
 
+    <button id="delete-product-btn">Delete Product</button>
+
     <script>
         function decodeJwt(token) {
             try {
@@ -109,6 +111,36 @@
         if (productId) {
             fetchProduct();
         }
+
+        if (!isAdmin()) {
+            document.getElementById('update-product-form').style.display = 'none';
+            document.getElementById('delete-product-btn').style.display = 'none';
+        }
+
+        document.getElementById('delete-product-btn').addEventListener('click', async function () {
+            if (!isAdmin()) {
+                alert('You are not authorized to delete products.');
+                return;
+            }
+
+            if (confirm('Are you sure you want to delete this product?')) {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/admin/products/${productId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    alert('Product deleted successfully!');
+                    window.location.href = '/products';
+                } else {
+                    const error = await response.json();
+                    alert('Product deletion failed: ' + error.message);
+                }
+            }
+        });
     </script>
 </body>
 </html>

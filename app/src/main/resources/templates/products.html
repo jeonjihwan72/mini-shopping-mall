@@ -9,6 +9,12 @@
     <button onclick="window.location.href='/orders'">View Cart</button>
     <div id="product-list"></div>
 
+    <div id="pagination-controls">
+        <button id="prev-page">Previous</button>
+        <span id="page-info"></span>
+        <button id="next-page">Next</button>
+    </div>
+
     <hr>
 
     <h2>Create Product (Admin)</h2>
@@ -55,8 +61,12 @@
             return decodedToken && decodedToken.auth && decodedToken.auth.includes('ROLE_ADMIN');
         }
 
-        async function fetchProducts() {
-            const response = await fetch('/api/products');
+        let currentPage = 0;
+        const pageSize = 10;
+        let totalPages = 0;
+
+        async function fetchProducts(page) {
+            const response = await fetch(`/api/products?page=${page}&size=${pageSize}`);
             const data = await response.json();
             const productList = document.getElementById('product-list');
             productList.innerHTML = '';
@@ -70,7 +80,24 @@
                 `;
                 productList.appendChild(productDiv);
             });
+            currentPage = data.pageable.pageNumber;
+            totalPages = data.totalPages;
+            document.getElementById('page-info').textContent = `Page ${currentPage + 1} of ${totalPages}`;
+            document.getElementById('prev-page').disabled = currentPage === 0;
+            document.getElementById('next-page').disabled = currentPage === totalPages - 1;
         }
+
+        document.getElementById('prev-page').addEventListener('click', () => {
+            if (currentPage > 0) {
+                fetchProducts(currentPage - 1);
+            }
+        });
+
+        document.getElementById('next-page').addEventListener('click', () => {
+            if (currentPage < totalPages - 1) {
+                fetchProducts(currentPage + 1);
+            }
+        });
 
         function viewProduct(id) {
             window.location.href = `/product?id=${id}`;
@@ -113,14 +140,18 @@
 
             if (response.ok) {
                 alert('Product created successfully!');
-                fetchProducts();
+                fetchProducts(currentPage);
             } else {
                 const error = await response.json();
                 alert('Product creation failed: ' + error.message);
             }
         });
 
-        fetchProducts();
+        fetchProducts(currentPage);
+
+        if (!isAdmin()) {
+            document.getElementById('create-product-form').style.display = 'none';
+        }
     </script>
 </body>
 </html>

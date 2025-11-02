@@ -30,7 +30,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/orders/**").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers("/", "/join", "/login", "/products", "/orders", "/api/products/**", "/api/members/join", "/api/members/login", "/h2-console/**").permitAll()
+                        .requestMatchers("/", "/join", "/login", "/products", "/product", "/orders", "/api/products/**", "/api/members/join", "/api/members/login", "/h2-console/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
