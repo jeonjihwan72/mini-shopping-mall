@@ -84,7 +84,6 @@ API 계층(Controller)에서 요청(Request)을 수신하고 응답(Response)을
     | 필드명 | 타입 | 설명 |
     |---|---|---|
     | username | String | 로그인 ID |
-    | password | String | 비밀번호 |
 
 - FR-M-002 (로그인) 요청
   - POST /api/members/login
@@ -201,8 +200,7 @@ API 계층(Controller)에서 요청(Request)을 수신하고 응답(Response)을
   | orderDate | LocalDateTime | 주문 일시 (엔티티에 createdDate 필드 추가 필요) |
 
 - 참고:
-  - OrderSimpleResponse에 주문 일시(orderDate)를 포함하는 것이 일반적이다. 이를 위해 Order 엔티티에 @CreateDate를 이용한 createDate 필드 추가를 고려해야 한다. 만약 엔티티 수정이 불가능하다면 이 필드를 제외한다.
-
+  - OrderSimpleResponse에 주문 일시(orderDate)를 포함하는 것이 일반적이다. 이를 위해 Order 엔티티에 @CreateDate를 이용한 createDate 필드 추가해야 한다. 만약 엔티티 수정이 불가능하다면 이 필드를 제외한다.
 
 ---
 
