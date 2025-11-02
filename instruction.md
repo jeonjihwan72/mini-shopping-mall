@@ -22,10 +22,7 @@
 1. 상품 관리(Product Management): 상품 등록/수정/삭제, 카테고리, 재고, 옵션 관리
 2. 주문/결제 관리(Order & Payment Management): 주문 생성/처리, 결제 연동(PG), 주문 취소/환불
 3. 회원/권한 관리(Member & Authorization): 회원 가입/로그인(인증), 회원 정보, 관리자 권한(인가) 관리
-4. 배송 관리(Delivery Management): 배송 정보, 운송장 연동, 배송비 계산
-5. 프로모션/마케팅(Promotion & Marketing): 쿠폰, 적립금, 이벤트 관리
-6. 고객 서비스 및 정보(Customer Service): 게시판(공지, Q&A), 리뷰/평점 관리
-7. 시스템 및 데이터베이스(System & Database): API 구현, DB 관리, 로그/모니터링
+4. 시스템 및 데이터베이스(System & Database): API 구현, DB 관리, 로그/모니터링
 
 ---
 
