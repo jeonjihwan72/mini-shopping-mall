@@ -70,7 +70,7 @@ JPA 엔티티로 관리될 핵심 데이터 모델이다. (편의상 Lombok 어�
 | FR-M-001-2 | 비밀번호 암호화 | 상 | password는 Bcrypt로 해싱하여 DB에 저장한다. (spring-boot-starter-security의 PasswordEncoder 사용) |
 | FR-M-001-3 | 기본 권한 | 상 | 회원가입 시, 기본 권하능로 ROLE_USER를 부여한다. |
 | FR-M-002 | 로그인(인증) | 상 | username, password로 로그인을 요청한다. (API: POST /api/members/login) |
-| FR-M-002-1 | 인증 성공 | 상 | 인증 성공 시, JWT 토큰을 발급하여 반환한다. (또는 세션 ID) |
+| FR-M-002-1 | 인증 성공 | 상 | 인증 성공 시, JWT 토큰을 발급하여 반환한다. |
 | FR-M-002-2 | 인증 실패 | 상 | 자격 증명 실패 시 401 Unauthorized 에러를 반환한다. |
 | FR-M-003 | 권한 관리(인가) | 상 | Spring Security를 사용하여 API 접근 권한을 제어한다. |
 | FR-M-003-1 | 관리자 API | 상 | /api/admin/** 패턴의 API는 ROLE_ADMIN 권한만 호출할 수 있다. |
@@ -93,7 +93,7 @@ JPA 엔티티로 관리될 핵심 데이터 모델이다. (편의상 Lombok 어�
 | FR-O-001 | 주문 생성 | 최상 | 로그인한 사용자(ROLE_USER)가 List<{productId, count}> 형식의 DTO로 주문을 요청한다. (API: POST /api/orders) |
 | FR-O-002 | 단일 트랜잭션 | 최상 | (중요)FR-O-003부터 FR-O-006까지의 모든 과정은 단일 트랜잭션(@Transactional) 내에서 처리되어야 한다. |
 | FR-O-003 | 재고 확인 | 최상 | 주문 요청된 모든 productId의 stock이 요청된 count보다 크거나 같은지 확인한다. |
-| FR-O-003-1 | 재고 부족 예외 | 최상 | stock이 count보다 적은 상품이 하나라도 있으면, 트랜잭션 전체를 롤백하고 400 Bad Request (또는 409 Conflict) 에러를 반환한다. |
+| FR-O-003-1 | 재고 부족 예외 | 최상 | stock이 count보다 적은 상품이 하나라도 있으면, 트랜잭션 전체를 롤백하고 409 Conflict 에러를 반환한다. |
 | FR-O-004 | 재고 차감(동시성) | 최상 | (중요) 재고 확인 및 차감 시, Pessimistic Lock(비관적 락)을 사용하여 Product 엔티티를 조회 및 수정한다.(JPA LockModeType.PESSIMISTIC_WRITE 사용) |
 | FR-O-005 | 주문 총액 계산 | 상 | `totalPrice = (상품1 가격 * 수량1) + (상품2 가격 * 수량2) ...` 공식을 사용해 총액을 계산한다. |
 | FR-O-006 | 주문/주문항목 저장 | 상 | Order를 생성(상태 ORDERED)하고, 요청된 items를 OrderItem으로 변환하여 Order와 연관시켜 모두 저장한다. |
@@ -112,3 +112,10 @@ API 실패 시, @RestControllerAdvice를 사용하여 공통된 JSON 형식으�
   "message": "해당 상품을 찾을 수 없습니다. (ID: 999)"
 }
 ```
+
+프로젝트는 리소스 상태 충돌 또는 데이터 무결성 제약 조건 위반과 관련된 예외 상황에서 일관되게 409 Conflict HTTP 상태 코드를 사용한다.
+| 상황 | HTTP 상태 코드 | 기존 요구사항 ID |
+|---|---|---|
+| 재고 부족 | 409 Conflict | FR-O-003-1 |
+| ID(Username) 중복 | 409 Conflict | FR-M-001-1 |
+| 기타 데이터 무결성 위반 | 409 Conflict | (신규 정책) |
