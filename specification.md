@@ -10,6 +10,8 @@
 - 핵심 범위 (In-Scope): 회원/권한, 상품 관리, 주문 관리(재고 차감 포함)
 - 범위 외 (Out-of-Scope): 결제(PG 연동), 배송(운송장 연동), 프로모션, 고객 서비스 등은 초기 버전에서 제외하거나 최소한으로 구현한다.
 
+---
+
 ## 2. 핵심 데이터 모델 (Entities)
 
 JPA 엔티티로 관리될 핵심 데이터 모델이다. (편의상 Lombok 어노테이션 사용)
@@ -58,11 +60,157 @@ JPA 엔티티로 관리될 핵심 데이터 모델이다. (편의상 Lombok 어�
 | orderPrice | Int | Not Null | 주문 시점의 상품 가격 (스냅샷) |
 | count | Int | Not Null | 주문 수량 |
 
-## 3. 기능 요구사항 명세 (Functional Requirements)
+---
+
+## 3. API 데이터 전송 객체 (DTOs)
+
+API 계층(Controller)에서 요청(Request)을 수신하고 응답(Response)을 반환하기 위해 사용되는 데이터 객체(DTO)를 정의한다. (Java의 Class로 구현)
+
+#### 3.1 회원 (Member)
+
+- FR-M-001 (회원 가입) 요청 
+  - POST /api/members/join
+  - DTO 클래스: MemberJoinRequest
+
+    | 필드명 | 타입 | 설명 |
+    |---|---|---|
+    | username | String | 로그인 ID |
+    | password | String | 비밀번호 |
+    | address | String | 배송 주소 |
+
+- FR-M-001 (회원 가입) 응답
+  - DTO 클래스: MemberJoinResponse
+
+    | 필드명 | 타입 | 설명 |
+    |---|---|---|
+    | username | String | 로그인 ID |
+    | password | String | 비밀번호 |
+
+- FR-M-002 (로그인) 요청
+  - POST /api/members/login
+  - DTO 클래스: MemberLoginRequest
+
+    | 필드명 | 타입 | 설명 |
+    |---|---|---|
+    | username | String | 로그인 ID |
+    | password | String | 비밀번호 |
+
+- FR-M-002-1 (로그인) 응답
+  - DTO 클래스: TokenResponse
+
+    | 필드명 | 타입 | 설명 |
+    |---|---|---|
+    | accessToken | String | 발급된 JWT 토큰 |
+
+#### 3.2 상품 (Product)
+
+- FR-P-001 (상품 등록) 요청
+  - POST /api/admin/products
+  - DTO 클래스: ProductCreateRequest
+
+    | 필드명 | 타입 | 설명 |
+    |---|---|---|
+    | name | String | 상품명 |
+    | price | Int | 상품 가격 |
+    | stock | Int | 재고 수량 |
+    | description | String | 상품 설명 |
+
+- FR-P-004 (상품 수정) 요청
+  - PATCH /api/admin/products/{productId}
+  - DTO 클래스: ProductUpdateRequest
+
+    | 필드명 | 타입 | 설명 |
+    |---|---|---|
+    | name | String | 수정할 상품명 |
+    | price | Int | 수정할 상품 가격 |
+    | stock | Int | 수정할 재고 수량 |
+    | description | String | 수정할 상품 설명 |
+
+- FR-P-003, FR-P-001/004 응답 (상품 상세)
+  - 상품 상세 조회, 등록 응답, 수정 응답 시 공통으로 사용
+  - DTO 클래스: ProductResponse
+
+    | 필드명 | 타입 | 설명 |
+    |---|---|---|
+    | id | Long | 상품 고유 ID |
+    | name | String | 상품명 |
+    | price | Int | 상품 가격 |
+    | stock | Int | 재고 수량 |
+    | description | String | 상품 설명 |
+
+- FR-P-002 (상품 목록 조회) 응답 항목
+  - Get /api/products 
+  - 응답은 `Page<ProductSimpleResponse>` 형태가 된다.
+  - DTO 클래스: ProductSimpleResponse
+
+    | 필드명 | 타입 | 설명 |
+    |---|---|---|
+    | id | Long | 상품 고유 ID |
+    | name | String | 상품명 |
+    | price | Int | 상품 가격 |
+
+#### 3.3 주문 (Order)
+
+- FR-O-001(주문 생성) 요청
+  - POST /api/orders
+  - DTO 클래스: OrderRequest
+
+    | 필드명 | 타입 | 설명 |
+    |---|---|---|
+    | items | List<OrderItemRequest> | 주문할 상품 목록 |
+  
+  - OrderRequest에 포함되는 내부 DTO
+  - DTO 클래스: OrderItemRequest
+    | 필드명 | 타입 | 설명 |
+    |---|---|---|
+    | productId | Long | 주문할 상품 ID |
+    | count | Int | 주문할 수량 |
+
+- FR-O-007-1 (주문 상세 조회) 응답
+  - GET /api/orders/{orderId}
+  - 응답 및 주문 생성(FR-O-001) 응답 시 사용
+  - DTO 클래스: OrderResponse
+
+    | 필드명 | 타입 | 설명 |
+    |---|---|---|
+    | id | Long | 주문 고유 ID |
+    | memberUsername | String | 주문한 회원 ID |
+    | orderItems | List<OrderitemResponse> | 주문 상품 상세 목록 |
+    | totalPrice | Int | 총 주문 금액 |
+    | status | String | 주문 상태 (ORDERED, CANCELED) |
+
+  - OrderResponse에 포함되는 내부 DTO
+  - DTO 클래스: OrderItemResponse
+
+    | 필드명 | 타입 | 설명 |
+    |---|---|---|
+    | productId | Long | 주문된 상품 ID |
+    | productName | String | 주문된 상품명 |
+    | orderPrice | Int | 주문 시점의 상품 가격 |
+    | count | Int | 주문 수량 |
+
+- FR-O-007 (주문 내역 조회) 응답 항목
+  - GET /api/orders 응답은 `Page<OrderSimpleResponse>` 형태가 된다.
+  - DTO 클래스: OrderSimpleResponse
+
+  | 필드명 | 타입 | 설명 |
+  |---|---|---|
+  | id | Long | 주문 고유 ID |
+  | totalPrice | Int | 총 주문 금액 |
+  | status | String | 주문 상태 (ORDERED, CANCELED) |
+  | orderDate | LocalDateTime | 주문 일시 (엔티티에 createdDate 필드 추가 필요) |
+
+- 참고:
+  - OrderSimpleResponse에 주문 일시(orderDate)를 포함하는 것이 일반적이다. 이를 위해 Order 엔티티에 @CreateDate를 이용한 createDate 필드 추가를 고려해야 한다. 만약 엔티티 수정이 불가능하다면 이 필드를 제외한다.
+
+
+---
+
+## 4. 기능 요구사항 명세 (Functional Requirements)
 
 다음 `FR-XXX` ID로 명명된 요구사항을 모두 만족하는 Controller, Service, Repository 코드를 생성해야 한다.
 
-#### 3.1 회원/권한 (FR-MEMBER)
+#### 4.1 회원/권한 (FR-MEMBER)
 
 | ID | 명칭 | 중요도 | 상세 설명 |
 |---|---|---|---|
@@ -81,7 +229,7 @@ JPA 엔티티로 관리될 핵심 데이터 모델이다. (편의상 Lombok 어�
 | FR-M-003-2 | 사용자 API | 상 | /api/orders/** 패턴의 API는 ROLE_USER 권한(로그인)이 필요하다. |
 | FR-M-003-3 | 공개 API | 상 | GET /api/products/**, POST /api/members/join, POST /api/members/login 은 누구나 접근 가능하다.|
 
-#### 3.2 상품 (FR-PRODUCT)
+#### 4.2 상품 (FR-PRODUCT)
 
 | ID | 명칭 | 중요도 | 상세 설명 |
 |---|---|---|---|
@@ -94,7 +242,7 @@ JPA 엔티티로 관리될 핵심 데이터 모델이다. (편의상 Lombok 어�
 | FR-P-005 | (관리자) 상품 삭제 | 상 | 관리자(ROLE_ADMIN)가 productId로 상품을 삭제한다. (API: DELETE /api/admin/products/{productId}) |
 | FR-P-005-1 | 삭제 제약 | 상 | 만약 해당 상품이 1개 이상의 OrderItem에서 참조되고 있을 경우(주문된 이력이 있음), 상품을 삭제할 수 없으며 409 Conflict 에러를 반환한다. |
 
-#### 3.3 주문 (FR-ORDER)
+#### 4.3 주문 (FR-ORDER)
 
 | ID | 명칭 | 중요도 | 상세 설명 |
 |---|---|---|---|
@@ -113,7 +261,9 @@ JPA 엔티티로 관리될 핵심 데이터 모델이다. (편의상 Lombok 어�
 | FR-O-008-2 | 재고 복구 (동시성) | 최상 | 재고 복구 시, FR-O-004의 재고 차감과 동일하게 Pessimistic Lock(비관적 락)을 사용하여, Product 엔티티의 재고를 수정한다. |
 | FR-O-008-3 | 주문 상태 확인 | 중 | 이미 CANCELED 상태인 주문을 다시 취소하려 하거나 ORDERED 상태가 아닌 주문을 취소하려 할 경우, 409 Conflict 에러를 반환한다. |
 
-## 4. 공통 에러 응답 형식
+---
+
+## 5. 공통 에러 응답 형식
 
 API 실패 시, @RestControllerAdvice를 사용하여 공통된 JSON 형식으로 응답을 통일한다.
 ```JSON
