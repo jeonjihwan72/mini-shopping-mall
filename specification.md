@@ -55,6 +55,7 @@ JPA 엔티티로 관리될 핵심 데이터 모델이다. (편의상 Lombok 어�
 | id | Long | PK | 주문 상품 고유 ID |
 | order | Order | ManyToOne | 연결된 주문 |
 | product | Product | ManyToOne | 주문된 상품 |
+| orderPrice | Int | Not Null | 주문 시점의 상품 가격 (스냅샷) |
 | count | Int | Not Null | 주문 수량 |
 
 ## 3. 기능 요구사항 명세 (Functional Requirements)
@@ -103,7 +104,7 @@ JPA 엔티티로 관리될 핵심 데이터 모델이다. (편의상 Lombok 어�
 | FR-O-003-1 | 재고 부족 예외 | 최상 | stock이 count보다 적은 상품이 하나라도 있으면, 트랜잭션 전체를 롤백하고 409 Conflict 에러를 반환한다. |
 | FR-O-004 | 재고 차감(동시성) | 최상 | (중요) 재고 확인 및 차감 시, Pessimistic Lock(비관적 락)을 사용하여 Product 엔티티를 조회 및 수정한다.(JPA LockModeType.PESSIMISTIC_WRITE 사용) |
 | FR-O-005 | 주문 총액 계산 | 상 | `totalPrice = (상품1 가격 * 수량1) + (상품2 가격 * 수량2) ...` 공식을 사용해 총액을 계산한다. |
-| FR-O-006 | 주문/주문항목 저장 | 상 | Order를 생성(상태 ORDERED)하고, 요청된 items를 OrderItem으로 변환하여 Order와 연관시켜 모두 저장한다. |
+| FR-O-006 | 주문/주문항목 저장 | 상 | Order를 생성(상태 ORDERED)한다. 요청된 items를 OrderItem으로 변환 시, 현재 Product의 price를 OrderItem의 orderPrice로 복사(스냅샷)하여 Order와 연관시켜 모두 저장한다. |
 | FR-O-007 | 주문 조회 | 중 | 로그인한 사용자가 자신의 주문 내역을 조회할 수 있다. (API: GET /api/orders) <br> - Query Parameter: page (페이지 번호, 0-indexed, 기본값 0), size (페이지 크기, 기본값 20) |
 | FR-O-007-1 | 주문 상세 조회 | 중 | orderId로 특정 주문의 상세 내역(주문 상품 포함)을 조회할 수 있다. (API: GET /api/orders/{orderId}) |
 | FR-O-007-2 | 조회 권한 | 중 | 사용자는 자신의 주문만 조회할 수 있어야 한다.(관리자는 모든 주문 조회 가능) |
