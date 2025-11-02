@@ -96,4 +96,8 @@ public class OrderService {
             product.increaseStock(orderItem.getCount());
         });
     }
+
+    public Page<OrderSimpleResponse> getAllOrders(Pageable pageable) {
+        return orderRepository.findAll(pageable).map(OrderSimpleResponse::from);
+    }
 }

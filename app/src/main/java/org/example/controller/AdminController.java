@@ -4,6 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.example.dto.RoleUpdateRequest;
 import org.example.service.MemberService;
 import org.example.service.OrderService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.example.dto.OrderSimpleResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,5 +28,10 @@ public class AdminController {
     public ResponseEntity<Void> updateMemberRole(@RequestBody RoleUpdateRequest request) {
         memberService.updateMemberRole(request.getUsername(), request.getNewRole());
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/orders")
+    public ResponseEntity<Page<OrderSimpleResponse>> getAllOrders(Pageable pageable) {
+        return ResponseEntity.ok(orderService.getAllOrders(pageable));
     }
 }
